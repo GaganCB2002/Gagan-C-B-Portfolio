@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
-import User from '../models/User.js'
-import Session from '../models/Session.js'
+import { findUserById } from '../store.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'gagan-portfolio-secret-key-change-in-production'
 const JWT_EXPIRES_IN = '7d'
@@ -9,7 +8,7 @@ export const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }
 
-export const authenticate = async (req, res, next) => {
+export const authenticate = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -19,21 +18,12 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1]
     const decoded = jwt.verify(token, JWT_SECRET)
 
-    const session = await Session.findOne({ token, isActive: true })
-    if (!session) {
-      return res.status(401).json({ success: false, error: 'Session expired' })
-    }
-
-    const user = await User.findById(decoded.id)
+    const user = findUserById(decoded.id)
     if (!user || !user.isActive) {
       return res.status(401).json({ success: false, error: 'User not found or deactivated' })
     }
 
-    session.lastActivity = new Date()
-    await session.save()
-
     req.user = user
-    req.session = session
     next()
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -46,20 +36,20 @@ export const authenticate = async (req, res, next) => {
   }
 }
 
-export const requireAdmin = async (req, res, next) => {
+export const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ success: false, error: 'Admin access required' })
   }
   next()
 }
 
-export const optionalAuth = async (req, res, next) => {
+export const optionalAuth = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1]
       const decoded = jwt.verify(token, JWT_SECRET)
-      const user = await User.findById(decoded.id)
+      const user = findUserById(decoded.id)
       if (user && user.isActive) {
         req.user = user
       }

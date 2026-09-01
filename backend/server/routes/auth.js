@@ -1,9 +1,9 @@
 import express from 'express'
-import User from '../models/User.js'
-import Session from '../models/Session.js'
-import ActivityEvent from '../models/ActivityEvent.js'
 import { generateToken, authenticate } from '../middleware/auth.js'
-import { sendOTP, sendWelcomeEmail } from '../services/email.js'
+import {
+  findUserByEmail, findUserById, createUser, updateUser,
+  comparePasswordSync, getAllUsers, seedAdmin
+} from '../store.js'
 
 const router = express.Router()
 
@@ -22,19 +22,20 @@ function parseUserAgent(ua) {
   else if (/Firefox/i.test(ua)) browser = 'Firefox'
   else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari'
   else if (/Edg/i.test(ua)) browser = 'Edge'
-  else if (/OPR|Opera/i.test(ua)) browser = 'Opera'
 
   if (/Windows/i.test(ua)) os = 'Windows'
   else if (/Mac OS X/i.test(ua)) os = 'macOS'
   else if (/Linux/i.test(ua)) os = 'Linux'
   else if (/Android/i.test(ua)) os = 'Android'
-  else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS'
+  else if (/iPhone|iPad/i.test(ua)) os = 'iOS'
 
   if (/Mobile|Android|iPhone/i.test(ua)) device = 'Mobile'
   else if (/iPad|Tablet/i.test(ua)) device = 'Tablet'
 
   return { browser, os, device }
 }
+
+seedAdmin()
 
 router.post('/register', async (req, res) => {
   try {
@@ -48,143 +49,21 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' })
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() })
-    if (existingUser) {
+    const existing = findUserByEmail(email)
+    if (existing) {
       return res.status(400).json({ success: false, error: 'Email already registered' })
     }
 
-    const user = new User({ name, email, password })
-    const otp = user.generateOTP()
-    await user.save()
-
-    const ip = getClientIp(req)
-    const ua = req.headers['user-agent'] || ''
-    const { browser, os, device } = parseUserAgent(ua)
-
-    const token = generateToken(user._id)
-    const session = new Session({
-      userId: user._id,
-      token,
-      ipAddress: ip,
-      userAgent: ua,
-      browser,
-      os,
-      device
-    })
-    await session.save()
-
-    user.totalSessions += 1
-    user.totalVisits += 1
-    user.lastLogin = new Date()
-    user.lastActive = new Date()
-    await user.save()
-
-    await new ActivityEvent({
-      userId: user._id,
-      sessionId: session._id.toString(),
-      eventType: 'AUTH_REGISTER',
-      eventName: 'User registered',
-      route: '/register',
-      ipAddress: ip,
-      userAgent: ua,
-      browser,
-      os,
-      device,
-      metadata: { email, name }
-    }).save()
-
-    await sendOTP(email, otp, name)
+    const user = createUser({ name, email, password })
 
     res.status(201).json({
       success: true,
-      requiresVerification: true,
-      message: 'Account created. Please check your email for the verification code.',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        createdAt: user.createdAt
-      }
+      message: 'Account created successfully',
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified }
     })
   } catch (err) {
     console.error('[Auth] Register error:', err)
     res.status(500).json({ success: false, error: 'Registration failed' })
-  }
-})
-
-router.post('/verify-otp', async (req, res) => {
-  try {
-    const { email, otp } = req.body
-
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, error: 'Email and OTP are required' })
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+otp +otpExpires')
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' })
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ success: false, error: 'Account already verified' })
-    }
-
-    if (!user.verifyOTP(otp)) {
-      return res.status(400).json({ success: false, error: 'Invalid or expired OTP' })
-    }
-
-    user.isVerified = true
-    user.clearOTP()
-    await user.save()
-
-    await sendWelcomeEmail(user.email, user.name)
-
-    res.json({
-      success: true,
-      message: 'Email verified successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: true
-      }
-    })
-  } catch (err) {
-    console.error('[Auth] Verify OTP error:', err)
-    res.status(500).json({ success: false, error: 'Verification failed' })
-  }
-})
-
-router.post('/resend-otp', async (req, res) => {
-  try {
-    const { email } = req.body
-
-    if (!email) {
-      return res.status(400).json({ success: false, error: 'Email is required' })
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() })
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' })
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ success: false, error: 'Account already verified' })
-    }
-
-    const otp = user.generateOTP()
-    await user.save()
-
-    await sendOTP(email, otp, user.name)
-
-    res.json({ success: true, message: 'OTP resent successfully' })
-  } catch (err) {
-    console.error('[Auth] Resend OTP error:', err)
-    res.status(500).json({ success: false, error: 'Failed to resend OTP' })
   }
 })
 
@@ -196,7 +75,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email and password are required' })
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +lockedUntil +loginAttempts')
+    const user = findUserByEmail(email)
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' })
     }
@@ -205,44 +84,33 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Account is deactivated' })
     }
 
-    // Rate limiting: check if account is locked
-    if (user.lockedUntil && user.lockedUntil > Date.now()) {
-      const remainingMinutes = Math.ceil((user.lockedUntil - Date.now()) / 60000)
+    if (user.lockedUntil && new Date(user.lockedUntil) > Date.now()) {
+      const remainingMinutes = Math.ceil((new Date(user.lockedUntil) - Date.now()) / 60000)
       return res.status(429).json({
         success: false,
-        error: `Account locked due to too many failed attempts. Try again in ${remainingMinutes} minutes.`,
-        locked: true,
-        lockedUntil: user.lockedUntil
+        error: `Account locked. Try again in ${remainingMinutes} minutes.`,
+        locked: true
       })
     }
 
-    // If lock expired, reset attempts
-    if (user.lockedUntil && user.lockedUntil <= Date.now()) {
+    if (user.lockedUntil && new Date(user.lockedUntil) <= Date.now()) {
+      updateUser(email, { loginAttempts: 0, lockedUntil: null })
       user.loginAttempts = 0
       user.lockedUntil = null
     }
 
-    const isMatch = await user.comparePassword(password)
+    const isMatch = comparePasswordSync(password, user.password)
     if (!isMatch) {
-      user.loginAttempts = (user.loginAttempts || 0) + 1
+      const attempts = (user.loginAttempts || 0) + 1
+      const updates = { loginAttempts: attempts }
 
-      // Lock after 5 failed attempts for 4 hours
-      if (user.loginAttempts >= 5) {
-        user.lockedUntil = new Date(Date.now() + 4 * 60 * 60 * 1000) // 4 hours
+      if (attempts >= 5) {
+        updates.lockedUntil = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
       }
-      await user.save()
 
-      await new ActivityEvent({
-        eventType: 'AUTH_FAILURE',
-        eventName: 'Failed login attempt',
-        route: '/login',
-        ipAddress: getClientIp(req),
-        userAgent: req.headers['user-agent'] || '',
-        success: false,
-        metadata: { email, attempts: user.loginAttempts }
-      }).save()
+      updateUser(email, updates)
 
-      const remainingAttempts = 5 - user.loginAttempts
+      const remainingAttempts = 5 - attempts
       if (remainingAttempts > 0) {
         return res.status(401).json({
           success: false,
@@ -252,90 +120,48 @@ router.post('/login', async (req, res) => {
         return res.status(429).json({
           success: false,
           error: 'Account locked due to too many failed attempts. Try again in 4 hours.',
-          locked: true,
-          lockedUntil: user.lockedUntil
+          locked: true
         })
       }
     }
 
-    // Successful login - reset attempts
-    user.loginAttempts = 0
-    user.lockedUntil = null
-
-    if (!user.isVerified) {
-      const otp = user.generateOTP()
-      await user.save()
-      await sendOTP(email, otp, user.name)
-
-      return res.json({
-        success: true,
-        requiresVerification: true,
-        message: 'Please verify your email first. A new OTP has been sent.',
-        email: user.email
-      })
-    }
-
-    const token = generateToken(user._id)
-    const ip = getClientIp(req)
-    const ua = req.headers['user-agent'] || ''
-    const { browser, os, device } = parseUserAgent(ua)
-
-    const session = new Session({
-      userId: user._id,
-      token,
-      ipAddress: ip,
-      userAgent: ua,
-      browser,
-      os,
-      device
+    updateUser(email, {
+      loginAttempts: 0,
+      lockedUntil: null,
+      lastLogin: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      totalSessions: (user.totalSessions || 0) + 1,
+      $pushLoginHistory: {
+        loginAt: new Date().toISOString(),
+        ipAddress: getClientIp(req),
+        ...parseUserAgent(req.headers['user-agent'] || ''),
+        success: true
+      }
     })
-    await session.save()
 
-    user.totalSessions += 1
-    user.lastLogin = new Date()
-    user.lastActive = new Date()
-
-    // Save login history
-    user.loginHistory.push({
-      loginAt: new Date(),
-      ipAddress: ip,
-      browser,
-      os,
-      device,
+    const updatedUser = findUserByEmail(email)
+    const loginRecord = {
+      loginAt: new Date().toISOString(),
+      ipAddress: getClientIp(req),
+      ...parseUserAgent(req.headers['user-agent'] || ''),
       success: true
-    })
-    // Keep only last 20 login records
-    if (user.loginHistory.length > 20) {
-      user.loginHistory = user.loginHistory.slice(-20)
     }
+    const history = [...(updatedUser.loginHistory || []), loginRecord].slice(-20)
+    updateUser(email, { loginHistory: history })
 
-    await user.save()
-
-    await new ActivityEvent({
-      userId: user._id,
-      sessionId: session._id.toString(),
-      eventType: 'AUTH_LOGIN',
-      eventName: 'User logged in',
-      route: '/login',
-      ipAddress: ip,
-      userAgent: ua,
-      browser,
-      os,
-      device,
-      metadata: { email, loginTime: new Date().toISOString() }
-    }).save()
+    const token = generateToken(user.id)
 
     res.json({
       success: true,
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        lastLogin: user.lastLogin,
-        loginHistory: user.loginHistory
+        lastLogin: new Date().toISOString(),
+        loginHistory: history
       }
     })
   } catch (err) {
@@ -344,51 +170,86 @@ router.post('/login', async (req, res) => {
   }
 })
 
-router.post('/logout', authenticate, async (req, res) => {
+router.post('/verify-otp', async (req, res) => {
   try {
-    const token = req.headers.authorization.split(' ')[1]
+    const { email, otp } = req.body
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, error: 'Email and OTP are required' })
+    }
 
-    await Session.findOneAndUpdate(
-      { token, isActive: true },
-      { isActive: false }
-    )
+    const user = findUserByEmail(email)
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' })
+    }
 
-    await new ActivityEvent({
-      userId: req.user._id,
-      sessionId: req.session?._id?.toString() || '',
-      eventType: 'AUTH_LOGOUT',
-      eventName: 'User logged out',
-      route: '/logout',
-      ipAddress: getClientIp(req),
-      userAgent: req.headers['user-agent'] || ''
-    }).save()
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, error: 'Account already verified' })
+    }
 
-    res.json({ success: true, message: 'Logged out successfully' })
+    if (!user.otp || user.otp !== otp || new Date(user.otpExpires) < Date.now()) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired OTP' })
+    }
+
+    updateUser(email, { isVerified: true, otp: null, otpExpires: null })
+
+    res.json({ success: true, message: 'Email verified successfully' })
   } catch (err) {
-    console.error('[Auth] Logout error:', err)
-    res.status(500).json({ success: false, error: 'Logout failed' })
+    console.error('[Auth] Verify OTP error:', err)
+    res.status(500).json({ success: false, error: 'Verification failed' })
   }
 })
 
-router.get('/me', authenticate, async (req, res) => {
-  const user = await User.findById(req.user._id).select('+loginAttempts +lockedUntil')
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required' })
+    }
+
+    const user = findUserByEmail(email)
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' })
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, error: 'Account already verified' })
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    updateUser(email, { otp, otpExpires: new Date(Date.now() + 10 * 60 * 1000).toISOString() })
+
+    res.json({ success: true, message: 'OTP resent successfully' })
+  } catch (err) {
+    console.error('[Auth] Resend OTP error:', err)
+    res.status(500).json({ success: false, error: 'Failed to resend OTP' })
+  }
+})
+
+router.post('/logout', authenticate, (req, res) => {
+  res.json({ success: true, message: 'Logged out successfully' })
+})
+
+router.get('/me', authenticate, (req, res) => {
+  const user = findUserById(req.user.id)
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'User not found' })
+  }
+
   res.json({
     success: true,
     user: {
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
-      avatar: user.avatar,
+      avatar: user.avatar || '',
       isVerified: user.isVerified,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
       lastActive: user.lastActive,
-      totalSessions: user.totalSessions,
-      totalVisits: user.totalVisits,
-      loginHistory: user.loginHistory || [],
-      loginAttempts: user.loginAttempts || 0,
-      lockedUntil: user.lockedUntil
+      totalSessions: user.totalSessions || 0,
+      totalVisits: user.totalVisits || 0,
+      loginHistory: user.loginHistory || []
     }
   })
 })

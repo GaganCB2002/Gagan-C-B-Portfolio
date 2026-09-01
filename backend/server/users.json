@@ -1,0 +1,36 @@
+[
+  {
+    "id": "mtinizaqu6wk9j",
+    "name": "Gagan C B",
+    "email": "gagancb2002@gmail.com",
+    "password": "$2b$12$vGmI7MSQ2svrM/JZkU/TV.yPjixxHbHK3OpSB8GjtUN1yEowT3E/C",
+    "role": "admin",
+    "isVerified": true,
+    "isActive": true,
+    "lastLogin": "2026-09-01T12:37:25.388Z",
+    "lastActive": "2026-09-01T12:37:25.388Z",
+    "totalSessions": 1,
+    "totalVisits": 0,
+    "loginAttempts": 0,
+    "lockedUntil": null,
+    "loginHistory": [
+      {
+        "loginAt": "2026-09-01T12:37:25.394Z",
+        "ipAddress": "::1",
+        "browser": "Unknown",
+        "os": "Windows",
+        "device": "Desktop",
+        "success": true
+      }
+    ],
+    "createdAt": "2026-09-01T12:36:45.991Z",
+    "$pushLoginHistory": {
+      "loginAt": "2026-09-01T12:37:25.388Z",
+      "ipAddress": "::1",
+      "browser": "Unknown",
+      "os": "Windows",
+      "device": "Desktop",
+      "success": true
+    }
+  }
+]
