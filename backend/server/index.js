@@ -24,11 +24,15 @@ const PORT = process.env.PORT || 3001
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gagan-portfolio'
 
-mongoose.connect(MONGODB_URI)
+mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log('[DB] MongoDB connected'))
   .catch(err => {
     console.error('[DB] MongoDB connection error:', err.message)
-    console.log('[DB] Falling back to JSON file storage')
+    console.log('[DB] Cannot connect to MongoDB. Please:')
+    console.log('  1. Install MongoDB locally, OR')
+    console.log('  2. Set MONGODB_URI in .env to a MongoDB Atlas connection string')
+    console.log('  3. Get free Atlas URI at: https://www.mongodb.com/atlas')
+    process.exit(1)
   })
 
 app.use(helmet({ contentSecurityPolicy: false }))

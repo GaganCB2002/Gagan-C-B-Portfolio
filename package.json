@@ -7,8 +7,11 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "server": "cd backend/server && npm start",
+    "server:dev": "cd backend/server && npm run dev",
     "dev:all": "cd backend/server && npm run dev & cd frontend && npm run dev",
     "seed": "cd database && node seed.js",
-    "lint": "cd frontend && npm run lint"
+    "lint": "cd frontend && npm run lint",
+    "setup": "npm run install:all && npm run seed",
+    "install:all": "cd frontend && npm install && cd ../backend/server && npm install && cd ../../database && npm install"
   }
 }

@@ -1,8 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gagan-portfolio';
 
-async function connectDB() {
+export async function connectDB() {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('[DB] MongoDB connected successfully');
@@ -12,4 +15,4 @@ async function connectDB() {
   }
 }
 
-module.exports = { connectDB, MONGODB_URI };
+export { MONGODB_URI };
