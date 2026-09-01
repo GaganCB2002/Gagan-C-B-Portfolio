@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_BASE = import.meta.env.VITE_API_URL || ''
 const isDev = import.meta.env.DEV
 const debug = (...args) => { if (isDev) console.debug('[Tracker]', ...args) }
 const warn = (...args) => { if (isDev) console.warn('[Tracker]', ...args) }

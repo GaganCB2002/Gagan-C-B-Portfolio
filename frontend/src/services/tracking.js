@@ -106,7 +106,7 @@ if (typeof window !== 'undefined') {
         pages
       }
       navigator.sendBeacon?.(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/visit/${visitorId}`,
+        `${import.meta.env.VITE_API_URL || ''}/api/visit/${visitorId}`,
         JSON.stringify(payload)
       )
     }
