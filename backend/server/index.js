@@ -1,6 +1,8 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -15,8 +17,6 @@ import userRoutes from './routes/users.js'
 import analyticsRoutes, { updateDailyAnalytics } from './routes/analytics.js'
 import adminRoutes from './routes/admin.js'
 
-dotenv.config()
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_FILE = path.join(__dirname, 'visitors.json')
 const app = express()
@@ -24,15 +24,12 @@ const PORT = process.env.PORT || 3001
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gagan-portfolio'
 
-mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
+mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => console.log('[DB] MongoDB connected'))
   .catch(err => {
     console.error('[DB] MongoDB connection error:', err.message)
-    console.log('[DB] Cannot connect to MongoDB. Please:')
-    console.log('  1. Install MongoDB locally, OR')
-    console.log('  2. Set MONGODB_URI in .env to a MongoDB Atlas connection string')
-    console.log('  3. Get free Atlas URI at: https://www.mongodb.com/atlas')
-    process.exit(1)
+    console.log('[DB] Server starting without MongoDB - auth features will not work')
+    console.log('[DB] Check: 1) Cluster running in Atlas 2) Network Access 0.0.0.0/0 3) Correct URI')
   })
 
 app.use(helmet({ contentSecurityPolicy: false }))
