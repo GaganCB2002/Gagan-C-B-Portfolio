@@ -29,7 +29,8 @@ router.get('/analytics/summary', async (req, res) => {
       todaySessions,
       todayEvents,
       todayPageViews,
-      recentActivity
+      recentActivity,
+      usersWithLogins
     ] = await Promise.all([
       User.countDocuments({ isActive: true }),
       User.countDocuments({ lastActive: { $gte: todayStart } }),
@@ -42,12 +43,19 @@ router.get('/analytics/summary', async (req, res) => {
       Session.countDocuments({ createdAt: { $gte: todayStart } }),
       ActivityEvent.countDocuments({ createdAt: { $gte: todayStart } }),
       ActivityEvent.countDocuments({ eventType: 'PAGE_VIEW', createdAt: { $gte: todayStart } }),
-      ActivityEvent.find().sort({ createdAt: -1 }).limit(10).select('-userAgent -__v')
+      ActivityEvent.find().sort({ createdAt: -1 }).limit(10).select('-userAgent -__v'),
+      User.find({ 'loginHistory.0': { $exists: true } }).select('name loginHistory')
     ])
 
     const todayAnalytics = await DailyAnalytics.findOne({
       date: todayStart.toISOString().split('T')[0]
     })
+
+    // Collect all login history from all users, sort by most recent
+    const recentLogins = usersWithLogins
+      .flatMap(u => (u.loginHistory || []).map(l => ({ ...l, userName: u.name })))
+      .sort((a, b) => new Date(b.loginAt) - new Date(a.loginAt))
+      .slice(0, 20)
 
     res.json({
       success: true,
@@ -68,7 +76,8 @@ router.get('/analytics/summary', async (req, res) => {
         todayRegistrations: todayAnalytics?.registrationCount || 0,
         todayErrors: todayAnalytics?.errorCount || 0
       },
-      recentActivity
+      recentActivity,
+      recentLogins
     })
   } catch (err) {
     console.error('[Admin] Summary error:', err)

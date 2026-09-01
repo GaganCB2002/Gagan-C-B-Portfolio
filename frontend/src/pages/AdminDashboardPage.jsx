@@ -7,6 +7,39 @@ import {
   ResponsiveContainer, BarChart, Bar
 } from 'recharts'
 
+function LiveClock() {
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{
+        background: 'var(--bg-2)', border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)', padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        fontFamily: 'var(--ff-mono)', fontSize: '.9rem', color: 'var(--text)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        <div style={{
+          width: '8px', height: '8px', borderRadius: '50%',
+          background: '#10b981', boxShadow: '0 0 8px #10b981',
+          animation: 'pulse 2s ease-in-out infinite'
+        }} />
+        <span style={{ fontWeight: 700 }}>{now.toLocaleTimeString('en-US', { hour12: true })}</span>
+        <span style={{ color: 'var(--text-3)', fontSize: '.8rem' }}>|</span>
+        <span style={{ fontSize: '.82rem', color: 'var(--text-2)' }}>
+          {now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </span>
+      </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }`}</style>
+    </div>
+  )
+}
+
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth()
   const [tab, setTab] = useState('overview')
@@ -29,7 +62,9 @@ export default function AdminDashboardPage() {
   const loadSummary = useCallback(async () => {
     try {
       const res = await api.get('/admin/analytics/summary')
-      if (res.data.success) setSummary(res.data.summary)
+      if (res.data.success) {
+        setSummary({ ...res.data.summary, recentLogins: res.data.recentLogins })
+      }
     } catch (err) {
       console.error('Summary error:', err)
     } finally {
@@ -129,6 +164,7 @@ export default function AdminDashboardPage() {
           <h1 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)' }}>Admin Dashboard</h1>
           <p style={{ fontSize: '.75rem', color: 'var(--text-3)' }}>Welcome, {user?.name}</p>
         </div>
+        <LiveClock />
         <button onClick={logout} className="btn btn-ghost btn-sm">Logout</button>
       </div>
 
@@ -230,6 +266,52 @@ function OverviewTab({ summary }) {
           </div>
         ))}
       </div>
+
+      {summary.recentLogins?.length > 0 && (
+        <div style={{
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', overflow: 'hidden', marginBottom: '24px'
+        }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '.95rem', fontWeight: 700, color: 'var(--text)' }}>Recent Login History</h3>
+            <span style={{ fontSize: '.75rem', color: 'var(--text-3)' }}>Last 20 logins</span>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-2)' }}>
+                {['User', 'Date & Time', 'IP Address', 'Browser', 'OS', 'Device', 'Status'].map(h => (
+                  <th key={h} style={{ padding: '10px 16px', fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text-3)', textAlign: 'left' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {summary.recentLogins.map((login, i) => (
+                <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
+                  <td style={{ padding: '10px 16px', fontSize: '.82rem', color: 'var(--text)', fontWeight: 500 }}>{login.userName || 'Unknown'}</td>
+                  <td style={{ padding: '10px 16px', fontSize: '.8rem', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+                    {new Date(login.loginAt).toLocaleString()}
+                  </td>
+                  <td style={{ padding: '10px 16px', fontSize: '.8rem', color: 'var(--text-3)', fontFamily: 'var(--ff-mono)' }}>
+                    {login.ipAddress}
+                  </td>
+                  <td style={{ padding: '10px 16px', fontSize: '.82rem', color: 'var(--text-2)' }}>{login.browser}</td>
+                  <td style={{ padding: '10px 16px', fontSize: '.82rem', color: 'var(--text-2)' }}>{login.os}</td>
+                  <td style={{ padding: '10px 16px', fontSize: '.82rem', color: 'var(--text-2)' }}>{login.device}</td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span style={{
+                      fontSize: '.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '100px',
+                      background: login.success ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                      color: login.success ? '#10b981' : '#ef4444'
+                    }}>
+                      {login.success ? 'Success' : 'Failed'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {summary.recentActivity?.length > 0 && (
         <div style={{

@@ -63,7 +63,23 @@ const userSchema = new mongoose.Schema({
   totalVisits: {
     type: Number,
     default: 0
-  }
+  },
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockedUntil: {
+    type: Date,
+    default: null
+  },
+  loginHistory: [{
+    loginAt: Date,
+    ipAddress: String,
+    browser: String,
+    os: String,
+    device: String,
+    success: Boolean
+  }]
 }, {
   timestamps: true
 })

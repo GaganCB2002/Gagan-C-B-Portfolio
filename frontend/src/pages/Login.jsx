@@ -27,8 +27,9 @@ export default function Login() {
       } else {
         setError(result.error || 'Login failed')
       }
-    } catch {
-      setError('Could not connect to server')
+    } catch (err) {
+      const msg = err?.response?.data?.error || 'Could not connect to server'
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -54,7 +55,8 @@ export default function Login() {
         {error && (
           <div style={{
             background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '10px 14px',
-            borderRadius: 'var(--radius-xs)', fontSize: '.85rem', marginBottom: '16px'
+            borderRadius: 'var(--radius-xs)', fontSize: '.85rem', marginBottom: '16px',
+            border: '1px solid rgba(239,68,68,0.2)'
           }}>{error}</div>
         )}
 

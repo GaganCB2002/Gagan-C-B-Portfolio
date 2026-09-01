@@ -196,7 +196,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email and password are required' })
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +lockedUntil +loginAttempts')
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' })
     }
@@ -205,8 +205,33 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Account is deactivated' })
     }
 
+    // Rate limiting: check if account is locked
+    if (user.lockedUntil && user.lockedUntil > Date.now()) {
+      const remainingMinutes = Math.ceil((user.lockedUntil - Date.now()) / 60000)
+      return res.status(429).json({
+        success: false,
+        error: `Account locked due to too many failed attempts. Try again in ${remainingMinutes} minutes.`,
+        locked: true,
+        lockedUntil: user.lockedUntil
+      })
+    }
+
+    // If lock expired, reset attempts
+    if (user.lockedUntil && user.lockedUntil <= Date.now()) {
+      user.loginAttempts = 0
+      user.lockedUntil = null
+    }
+
     const isMatch = await user.comparePassword(password)
     if (!isMatch) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1
+
+      // Lock after 5 failed attempts for 4 hours
+      if (user.loginAttempts >= 5) {
+        user.lockedUntil = new Date(Date.now() + 4 * 60 * 60 * 1000) // 4 hours
+      }
+      await user.save()
+
       await new ActivityEvent({
         eventType: 'AUTH_FAILURE',
         eventName: 'Failed login attempt',
@@ -214,11 +239,28 @@ router.post('/login', async (req, res) => {
         ipAddress: getClientIp(req),
         userAgent: req.headers['user-agent'] || '',
         success: false,
-        metadata: { email }
+        metadata: { email, attempts: user.loginAttempts }
       }).save()
 
-      return res.status(401).json({ success: false, error: 'Invalid credentials' })
+      const remainingAttempts = 5 - user.loginAttempts
+      if (remainingAttempts > 0) {
+        return res.status(401).json({
+          success: false,
+          error: `Invalid credentials. ${remainingAttempts} attempts remaining.`
+        })
+      } else {
+        return res.status(429).json({
+          success: false,
+          error: 'Account locked due to too many failed attempts. Try again in 4 hours.',
+          locked: true,
+          lockedUntil: user.lockedUntil
+        })
+      }
     }
+
+    // Successful login - reset attempts
+    user.loginAttempts = 0
+    user.lockedUntil = null
 
     if (!user.isVerified) {
       const otp = user.generateOTP()
@@ -252,6 +294,21 @@ router.post('/login', async (req, res) => {
     user.totalSessions += 1
     user.lastLogin = new Date()
     user.lastActive = new Date()
+
+    // Save login history
+    user.loginHistory.push({
+      loginAt: new Date(),
+      ipAddress: ip,
+      browser,
+      os,
+      device,
+      success: true
+    })
+    // Keep only last 20 login records
+    if (user.loginHistory.length > 20) {
+      user.loginHistory = user.loginHistory.slice(-20)
+    }
+
     await user.save()
 
     await new ActivityEvent({
@@ -265,7 +322,7 @@ router.post('/login', async (req, res) => {
       browser,
       os,
       device,
-      metadata: { email }
+      metadata: { email, loginTime: new Date().toISOString() }
     }).save()
 
     res.json({
@@ -277,7 +334,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        loginHistory: user.loginHistory
       }
     })
   } catch (err) {
@@ -312,21 +370,25 @@ router.post('/logout', authenticate, async (req, res) => {
   }
 })
 
-router.get('/me', authenticate, (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
+  const user = await User.findById(req.user._id).select('+loginAttempts +lockedUntil')
   res.json({
     success: true,
     user: {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      avatar: req.user.avatar,
-      isVerified: req.user.isVerified,
-      createdAt: req.user.createdAt,
-      lastLogin: req.user.lastLogin,
-      lastActive: req.user.lastActive,
-      totalSessions: req.user.totalSessions,
-      totalVisits: req.user.totalVisits
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      lastActive: user.lastActive,
+      totalSessions: user.totalSessions,
+      totalVisits: user.totalVisits,
+      loginHistory: user.loginHistory || [],
+      loginAttempts: user.loginAttempts || 0,
+      lockedUntil: user.lockedUntil
     }
   })
 })
