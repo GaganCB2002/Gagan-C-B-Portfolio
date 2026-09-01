@@ -14,7 +14,7 @@ import rateLimit from 'express-rate-limit'
 
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
-import analyticsRoutes, { updateDailyAnalytics } from './routes/analytics.js'
+import analyticsRoutes from './routes/analytics.js'
 import adminRoutes from './routes/admin.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -189,26 +189,6 @@ app.post('/api/visit', async (req, res) => {
     const visitors = readVisitors()
     visitors.push(visit)
     saveVisitors(visitors)
-
-    await updateDailyAnalytics('VISIT', null, visit.id)
-
-    await new (await import('./models/ActivityEvent.js')).default({
-      sessionId: visit.id,
-      eventType: 'VISIT',
-      eventName: 'Portfolio visited',
-      route: req.body.url || '/',
-      ipAddress: ip,
-      userAgent: ua,
-      browser: visit.browser,
-      os: visit.os,
-      device: visit.device,
-      metadata: {
-        screen: visit.screen,
-        language: visit.language,
-        referrer: visit.referrer,
-        pages: visit.pages
-      }
-    }).save()
 
     sendEmailNotification(visit)
 

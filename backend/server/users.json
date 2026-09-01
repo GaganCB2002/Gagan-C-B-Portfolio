@@ -7,11 +7,11 @@
     "role": "admin",
     "isVerified": true,
     "isActive": true,
-    "lastLogin": "2026-09-01T12:37:25.388Z",
-    "lastActive": "2026-09-01T12:37:25.388Z",
-    "totalSessions": 1,
+    "lastLogin": "2026-09-01T12:43:33.702Z",
+    "lastActive": "2026-09-01T12:43:33.702Z",
+    "totalSessions": 2,
     "totalVisits": 0,
-    "loginAttempts": 0,
+    "loginAttempts": 1,
     "lockedUntil": null,
     "loginHistory": [
       {
@@ -21,11 +21,19 @@
         "os": "Windows",
         "device": "Desktop",
         "success": true
+      },
+      {
+        "loginAt": "2026-09-01T12:43:33.713Z",
+        "ipAddress": "::1",
+        "browser": "Unknown",
+        "os": "Windows",
+        "device": "Desktop",
+        "success": true
       }
     ],
     "createdAt": "2026-09-01T12:36:45.991Z",
     "$pushLoginHistory": {
-      "loginAt": "2026-09-01T12:37:25.388Z",
+      "loginAt": "2026-09-01T12:43:33.702Z",
       "ipAddress": "::1",
       "browser": "Unknown",
       "os": "Windows",
