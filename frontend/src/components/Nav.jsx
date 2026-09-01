@@ -157,11 +157,8 @@ export default function Nav() {
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link to="/login" className="btn btn-ghost btn-sm" style={{ padding: '6px 14px', fontSize: '.78rem' }}>
+            <Link to="/login" className="btn btn-primary btn-sm" style={{ padding: '6px 14px', fontSize: '.78rem' }}>
               Sign In
-            </Link>
-            <Link to="/register" className="btn btn-primary btn-sm" style={{ padding: '6px 14px', fontSize: '.78rem' }}>
-              Sign Up
             </Link>
           </div>
         )}
