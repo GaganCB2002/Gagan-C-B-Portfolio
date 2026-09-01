@@ -82,39 +82,37 @@ export default function Experience() {
               key={i}
               className="exp-item"
               ref={el => itemRefs.current[i] = el}
-              style={{ transitionDelay: `${i * 150}ms` }}
+              style={{ transitionDelay: `${i * 120}ms` }}
             >
               <div className="exp-connector">
                 <div className={`exp-node ${job.current ? 'current-node' : ''}`}>
                   {job.current && <div className="node-ping" />}
                 </div>
               </div>
-              <div className="exp-card-wrap">
-                <div className="exp-card">
-                  <div className="exp-header">
-                    {job.badge && <div className="exp-badge">{job.badge}</div>}
-                    <div className="exp-period">{job.period}</div>
-                  </div>
-                  <h3 className="exp-role">{job.role}</h3>
-                  <h4 className="exp-company">
-                    <span className="company-name">{job.company}</span>
-                    <span className="company-loc">{job.location}</span>
-                  </h4>
-                  {job.highlights && (
-                    <div className="exp-highlights">
-                      {job.highlights.map((h, j) => (
-                        <div key={j} className="hl-chip">{h}</div>
-                      ))}
-                    </div>
-                  )}
-                  <ul className="exp-points">
-                    {job.points.map((p, j) => (
-                      <li key={j}>{p}</li>
+              <div className="exp-card">
+                <div className="exp-header">
+                  {job.badge && <div className="exp-badge">{job.badge}</div>}
+                  <div className="exp-period">{job.period}</div>
+                </div>
+                <h3 className="exp-role">{job.role}</h3>
+                <h4 className="exp-company">
+                  <span className="company-name">{job.company}</span>
+                  <span className="company-loc">{job.location}</span>
+                </h4>
+                {job.highlights && (
+                  <div className="exp-highlights">
+                    {job.highlights.map((h, j) => (
+                      <div key={j} className="hl-chip">{h}</div>
                     ))}
-                  </ul>
-                  <div className="exp-tags">
-                    {job.tags.map((t, j) => <span key={j}>{t}</span>)}
                   </div>
+                )}
+                <ul className="exp-points">
+                  {job.points.map((p, j) => (
+                    <li key={j}>{p}</li>
+                  ))}
+                </ul>
+                <div className="exp-tags">
+                  {job.tags.map((t, j) => <span key={j}>{t}</span>)}
                 </div>
               </div>
             </div>
