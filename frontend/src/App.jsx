@@ -18,7 +18,6 @@ import Footer from './components/Footer'
 import Loader from './components/Loader'
 import BackToTop from './components/BackToTop'
 import Login from './pages/Login'
-import Register from './pages/Register'
 import VerifyOTP from './pages/VerifyOTP'
 import UserDashboard from './pages/UserDashboard'
 import AdminDashboardPage from './pages/AdminDashboardPage'
@@ -113,7 +112,6 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<PortfolioPage />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
       <Route path="/dashboard" element={
         <ProtectedRoute>

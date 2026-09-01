@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { trackEvent } from '../services/tracking'
 
@@ -100,10 +100,6 @@ export default function Login() {
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
 
-        <p style={{ textAlign: 'center', fontSize: '.85rem', color: 'var(--text-3)' }}>
-          Don&apos;t have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 600 }}>Sign up</Link>
-        </p>
       </form>
     </div>
   )
