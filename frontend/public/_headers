@@ -1,0 +1,21 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/.env
+  X-Robots-Tag: noindex, nofollow
+
+/.git/*
+  X-Robots-Tag: noindex, nofollow
+
+/.git/config
+  X-Robots-Tag: noindex, nofollow
+
+/.git/HEAD
+  X-Robots-Tag: noindex, nofollow
+
+/admin*
+  X-Robots-Tag: noindex, nofollow

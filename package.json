@@ -1,0 +1,14 @@
+{
+  "name": "gagan-portfolio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Gagan C B - Full Stack Developer Portfolio",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "server": "cd backend/server && npm start",
+    "dev:all": "cd backend/server && npm run dev & cd frontend && npm run dev",
+    "seed": "cd database && node seed.js",
+    "lint": "cd frontend && npm run lint"
+  }
+}

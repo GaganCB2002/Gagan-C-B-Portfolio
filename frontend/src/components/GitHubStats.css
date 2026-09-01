@@ -1,0 +1,52 @@
+.gh-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.gh-stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:20px;
+  display:flex;align-items:center;gap:16px;
+  transition:all .4s var(--ease-bounce);box-shadow:var(--shadow-sm);
+}
+.gh-stat-card:hover{box-shadow:var(--shadow-lg);border-color:var(--border-accent);transform:translateY(-4px);}
+.gh-stat-card.primary{background:linear-gradient(135deg,var(--accent-dim),var(--bg-card));border-color:var(--border-accent);}
+.gh-stat-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:var(--accent-dim);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;
+  color:var(--accent);
+}
+.gh-stat-icon svg{width:20px;height:20px;}
+.gh-stat-body{display:flex;flex-direction:column;gap:2px;}
+.gh-stat-num{font-size:1.5rem;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em;}
+.gh-stat-label{font-size:.66rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.gh-langs{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:20px 24px;
+  margin-bottom:24px;box-shadow:var(--shadow-sm);
+}
+.gh-langs-header{
+  font-size:.75rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:14px;color:var(--text-2);
+}
+.gh-lang-bar-track{display:flex;height:28px;border-radius:6px;overflow:hidden;gap:2px;}
+.gh-lang-bar{
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;position:relative;min-width:fit-content;
+  padding:0 8px;border-radius:4px;
+}
+.gh-lang-bar:hover{transform:scaleY(1.15);}
+.gh-lang-label{font-size:.6rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3);white-space:nowrap;}
+.gh-cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:12px 24px;border:1.5px solid var(--border);
+  border-radius:100px;font-size:.82rem;font-weight:600;
+  color:var(--text-2);transition:all .35s var(--ease-bounce);
+}
+.gh-cta:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-3px);box-shadow:0 4px 16px var(--accent-dim);}
+
+@media(max-width:800px){
+  .gh-stats-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:500px){
+  .gh-stats-grid{grid-template-columns:1fr;}
+  .gh-lang-bar-track{height:22px;}
+  .gh-lang-label{font-size:.5rem;}
+}

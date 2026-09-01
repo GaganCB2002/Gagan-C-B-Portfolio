@@ -1,0 +1,74 @@
+#code-terminal{padding:80px 0;overflow:hidden;}
+.terminal-window{
+  background:#0d1117;border:1px solid #30363d;
+  border-radius:14px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.03);
+  max-width:780px;margin:0 auto;
+  transition:transform .4s var(--ease);
+}
+.terminal-window:hover{transform:scale(1.01);}
+.terminal-header{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 20px;background:#161b22;
+  border-bottom:1px solid #30363d;
+}
+.terminal-dots{display:flex;gap:8px;}
+.terminal-dots span{width:12px;height:12px;border-radius:50%;}
+.terminal-dots span:nth-child(1){background:#ff5f56;}
+.terminal-dots span:nth-child(2){background:#ffbd2e;}
+.terminal-dots span:nth-child(3){background:#27c93f;}
+.terminal-title{
+  font-size:.75rem;font-family:'DM Mono',monospace;
+  color:#8b949e;flex:1;
+}
+.terminal-status{
+  font-size:.6rem;font-family:'DM Mono',monospace;
+  color:#27c93f;letter-spacing:.08em;
+}
+.terminal-body{
+  display:flex;padding:20px 0 20px 0;
+  font-family:'DM Mono',monospace;font-size:.8rem;
+  line-height:1.7;min-height:360px;
+  background:linear-gradient(180deg,#0d1117,#0a0e12);
+}
+.terminal-line-nums{
+  width:48px;flex-shrink:0;
+  text-align:right;padding-right:16px;
+  color:#484f58;user-select:none;
+  display:flex;flex-direction:column;
+  border-right:1px solid #21262d;
+  margin-right:16px;
+}
+.line-cursor{color:#30363d;}
+.terminal-code{flex:1;white-space:pre;}
+.code-line{padding:0 4px;transition:color .2s;}
+.code-line.annotation{color:#7ee787;}
+.code-line.annotation .annotation-symbol{color:#58a6ff;}
+.code-line.keyword{color:#ff7b72;}
+.code-line.field{color:#79c0ff;}
+.code-line.code{color:#e6edf3;}
+.cursor-blink{
+  color:#58a6ff;
+  animation:blinkTerminal .8s step-end infinite;
+  font-weight:100;
+}
+.cursor-blink-sm{
+  color:#27c93f;
+  animation:blinkTerminal .8s step-end infinite;
+  margin-left:4px;
+}
+.terminal-footer{
+  display:flex;align-items:center;
+  padding:12px 20px;background:#161b22;
+  border-top:1px solid #30363d;
+  font-family:'DM Mono',monospace;font-size:.75rem;
+}
+.term-prompt{color:#8b949e;margin-right:8px;}
+.term-cmd{color:#e6edf3;}
+
+@keyframes blinkTerminal{50%{opacity:0}}
+
+@media(max-width:700px){
+  .terminal-body{font-size:.7rem;min-height:280px;}
+  .terminal-line-nums{width:36px;}
+}

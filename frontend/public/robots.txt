@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /.env
+Disallow: /.git/
+Disallow: /src/
+
+Sitemap: https://gagancb.netlify.app/sitemap.xml
