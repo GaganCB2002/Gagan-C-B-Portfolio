@@ -54,6 +54,21 @@ export function AuthProvider({ children }) {
     return { success: false, error: res.data.error }
   }
 
+  async function register(name, email, password) {
+    const res = await api.post('/auth/register', { name, email, password })
+    if (res.data.success) {
+      if (res.data.requiresVerification) {
+        return { success: true, requiresVerification: true, email: res.data.email || email }
+      }
+      localStorage.setItem('token', res.data.token)
+      setToken(res.data.token)
+      setUser(res.data.user)
+      api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
+      return { success: true }
+    }
+    return { success: false, error: res.data.error }
+  }
+
   async function logout() {
     try {
       if (token) {
@@ -71,7 +86,7 @@ export function AuthProvider({ children }) {
   const isAdmin = user?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin, fetchUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, isAdmin, fetchUser }}>
       {children}
     </AuthContext.Provider>
   )
